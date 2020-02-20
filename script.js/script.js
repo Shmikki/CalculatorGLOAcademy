@@ -1,4 +1,4 @@
- 
+ const DAY_STRING = ['день','дня','дней'];
  
  
 const DATA = {
@@ -23,7 +23,12 @@ const startButton = document.querySelector('.start-button'),
     total = document.querySelector('.total'),
     fastRange = document.querySelector('.fast-range'),
     totalPriceSum = document.querySelector('.total_price__sum'),
-    Adapt = document.querySelector('#adapt');
+    Adapt = document.querySelector('#adapt'),
+    mobileTemplates = document.querySelector('#mobileTemplates'),
+    typeSite = document.querySelector('.type-site'),
+    maxDeadline = document.querySelector('.max-deadline'),
+    rangeDeadline = document.querySelector('.range-deadline'),
+    deadlineValue = document.querySelector('.deadline-value');
 
 
 function showElem(elem){
@@ -37,6 +42,23 @@ function hideElem(elem){
     
 }
 
+function declOfNum(n, titles, from) {
+    return n + ' ' + titles[from ? n % 10 === 1 && n % 100 !== 11 ? 1 : 2 : n % 10 === 1 && n % 100 !== 11 ?
+        0 : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20) ? 1 : 2];
+}
+
+
+
+function RenderTextContent(total,site , maxDay,minDay){
+
+    
+    typeSite.textContent = site;
+    totalPriceSum.textContent = total;
+    maxDeadline.textContent = declOfNum(maxDay,DAY_STRING);
+    rangeDeadline.min = minDay;
+    rangeDeadline.max = maxDay;
+    deadlineValue.textContent = declOfNum(rangeDeadline.value,DAY_STRING);
+}
 
 function handlerCallBackForm(event) {
     const target = event.target;
@@ -47,13 +69,30 @@ function handlerCallBackForm(event) {
     if(target.classList.contains('calc-handler')){
         priceCalculation(target);
     }
-    
+    if(Adapt.checked){
+        mobileTemplates.removeAttribute("disabled");
+    }else{
+        mobileTemplates.setAttribute("disabled","true");
+    }
 }
 
 function priceCalculation(elem){
     let result = 0, 
-    index = 0;
-    options = [];
+    index = 0,
+    options = [],
+    site = '',
+    maxDeadlineDay = DATA.deadLineDay[index][1],
+    minDeadlineDay = DATA.deadLineDay[index][0],
+    nameValue = "." + elem.value + "_value";
+    
+
+    if(elem.checked ){
+        document.querySelector(nameValue).textContent = "Да";
+    }
+    else{
+        document.querySelector(nameValue).textContent = "Нет";
+    }
+
 
     if(elem.name === 'whichSite'){
         for (const item of formCalculate.elements){
@@ -65,11 +104,17 @@ function priceCalculation(elem){
     }
 
     for (const item of formCalculate.elements){
+
+         
         if(item.name === 'whichSite' && item.checked){
           index = DATA.whichSite.indexOf(item.value);
+          site = item.dataset.site;
+          maxDeadlineDay = DATA.deadLineDay[index][1];
+          minDeadlineDay = DATA.deadLineDay[index][0];
         } else if(item.classList.contains('calc-handler') && item.checked){
-            options.push(item.value)
+            options.push(item.value);
         }
+        
     }
     options.forEach(function(key){
         if(typeof(DATA[key]) === 'number' ){
@@ -93,7 +138,9 @@ function priceCalculation(elem){
 
     result += DATA.price[index];
 
-    totalPriceSum.textContent = result;
+    RenderTextContent(result,site , maxDeadlineDay,minDeadlineDay);
+
+ 
 }
 
 
