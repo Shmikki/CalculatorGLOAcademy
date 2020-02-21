@@ -28,7 +28,13 @@ const startButton = document.querySelector('.start-button'),
     typeSite = document.querySelector('.type-site'),
     maxDeadline = document.querySelector('.max-deadline'),
     rangeDeadline = document.querySelector('.range-deadline'),
-    deadlineValue = document.querySelector('.deadline-value');
+    deadlineValue = document.querySelector('.deadline-value'),
+    calcDescription = document.querySelector('.calc-description'),
+    analyticsGoogle = document.getElementById('analyticsGoogle'),
+    metrikaYandex = document.getElementById('metrikaYandex'),
+    sendOrder = document.getElementById('sendOrder'),
+    cardHead = document.querySelector('.card-head'),
+    totalPrice = document.querySelector('.total_price');
 
 
 function showElem(elem){
@@ -48,6 +54,43 @@ function declOfNum(n, titles, from) {
 }
 
 
+function dopOtionsString(){
+    let str = '';
+
+    if(metrikaYandex.checked || analyticsGoogle.checked || sendOrder.checked){
+        str += "Подключим";
+
+
+        if(metrikaYandex.checked){
+            str += ' Яндекс метрику';
+            if(analyticsGoogle.checked && sendOrder.checked){
+                str += " , Гугл аналитику и отправку заявок на почту.";
+                return str;
+            }
+            if(analyticsGoogle.checked || sendOrder.checked){
+                str +=' и';
+            }
+        }
+
+
+        if(analyticsGoogle.checked){
+            str += ' Гугл Аналитику';
+
+            if(sendOrder.checked){
+                str += " и";
+            }
+        }
+
+        if(sendOrder.checked){
+            str +=' Отправку заявок на почту';
+        }
+        str +=".";
+    }
+
+        
+
+    return str;
+}
 
 function RenderTextContent(total,site , maxDay,minDay){
 
@@ -58,12 +101,21 @@ function RenderTextContent(total,site , maxDay,minDay){
     rangeDeadline.min = minDay;
     rangeDeadline.max = maxDay;
     deadlineValue.textContent = declOfNum(rangeDeadline.value,DAY_STRING);
+
+
+    calcDescription.textContent = `Сделаем ${site} ${adapt.checked ? 
+    ', адаптированный под мобильные устройства и планшеты' : ''}.
+    ${editable.checked ?
+    'Установим панель админстратора , чтобы вы могли самостоятельно менять содержание на сайте без разработчика. ' : ''} 
+    ${dopOtionsString()}
+    `;
 }
 
 function handlerCallBackForm(event) {
     const target = event.target;
     if  (target.classList.contains('want-faster')){
     target.checked ? showElem(fastRange) : hideElem(fastRange);
+    priceCalculation(target); 
     }
 
     if(target.classList.contains('calc-handler')){
@@ -76,20 +128,21 @@ function handlerCallBackForm(event) {
     }
 }
 
-function priceCalculation(elem){
+function priceCalculation(elem = {}){
     let result = 0, 
     index = 0,
     options = [],
     site = '',
     maxDeadlineDay = DATA.deadLineDay[index][1],
     minDeadlineDay = DATA.deadLineDay[index][0],
-    nameValue = "." + elem.value + "_value";
-    
+    nameValue = "." + elem.value + "_value",
+    overPercent = 0;
 
-    if(elem.checked ){
+
+    if(elem.checked && (elem.value == "desktopTemplates" || elem.value == "adapt" || elem.value == "mobileTemplates" || elem.value == "editable")){
         document.querySelector(nameValue).textContent = "Да";
     }
-    else{
+    else if(elem.value == "desktopTemplates" || elem.value == "adapt" || elem.value == "mobileTemplates" || elem.value == "editable") {
         document.querySelector(nameValue).textContent = "Нет";
     }
 
@@ -104,8 +157,6 @@ function priceCalculation(elem){
     }
 
     for (const item of formCalculate.elements){
-
-         
         if(item.name === 'whichSite' && item.checked){
           index = DATA.whichSite.indexOf(item.value);
           site = item.dataset.site;
@@ -114,8 +165,14 @@ function priceCalculation(elem){
         } else if(item.classList.contains('calc-handler') && item.checked){
             options.push(item.value);
         }
-        
+        else if(item.classList.contains('want-faster') && item.checked){
+            let overDAy = maxDeadlineDay - rangeDeadline.value;
+            overPercent = overDAy *(DATA.deadLinePercent[index] / 100);
+        }
     }
+
+    result += DATA.price[index];
+
     options.forEach(function(key){
         if(typeof(DATA[key]) === 'number' ){
             if(key === 'sendOrder'){
@@ -126,7 +183,7 @@ function priceCalculation(elem){
             }
         } else{
             if(key === 'desktopTemplates'){
-                result += DATA.price[index] * DATA[key][index] / 100 
+                result += DATA.price[index] * DATA[key][index] / 100 ;
             }
             else{
                 result += DATA[key][index];
@@ -136,18 +193,28 @@ function priceCalculation(elem){
 
 
 
-    result += DATA.price[index];
+
+    result += result * overPercent;
 
     RenderTextContent(result,site , maxDeadlineDay,minDeadlineDay);
 
  
 }
 
+function moveTotal(){
+    if(document.documentElement.getBoundingClientRect().bottom < document.documentElement.clientHeight){
+        totalPrice.classList.add('totalPriceBottom');
+    }
+}
+
 
 startButton.addEventListener('click',function(){
     showElem(mainForm);
     hideElem(firstScreen);
+    window.addEventListener('scroll', moveTotal());
 });
+
+
 
 
 endButton.addEventListener('click',function() {
@@ -158,6 +225,10 @@ endButton.addEventListener('click',function() {
         }
     }
 
+
+    cardHead.textContent = 'Заявка на разработку сайта';
+    
+    hideElem(totalPrice);
     showElem(total);
 });
 
@@ -165,3 +236,4 @@ endButton.addEventListener('click',function() {
 
 
 formCalculate.addEventListener('change',handlerCallBackForm);
+priceCalculation();
